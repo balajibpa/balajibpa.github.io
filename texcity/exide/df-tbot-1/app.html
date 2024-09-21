@@ -3,18 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mini Web App</title>
+    <title>Exide Gate In & Out Form</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
+            background-color: #f8f8f8; /* Light gray background */
+            color: #333; /* Dark gray text for contrast */
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Center align items */
+        }
+        h2, h3 {
+            color: #000; /* Black headings */
         }
         select, input, button {
-            display: block;
             margin: 10px 0;
             padding: 10px;
-            width: 100%;
+            width: 90%; /* Set width to 90% */
+            border: 1px solid #ccc; /* Light gray border */
+            border-radius: 4px; /* Rounded corners */
+            transition: border-color 0.3s; /* Smooth border color transition */
+        }
+
+        input, button {
+            margin: 10px 0;
+            padding: 10px;
+            width: 60%; /* Set width to 60% */
+            border: 1px solid #ccc; /* Light gray border */
+            border-radius: 4px; /* Rounded corners */
+            transition: border-color 0.3s; /* Smooth border color transition */
+        }
+
+        select:focus, input:focus, button:focus {
+            border-color: #000; /* Black border on focus */
+            outline: none; /* Remove default outline */
+        }
+        button {
+            background-color: #000; /* Black button background */
+            color: white; /* White text on button */
+            cursor: pointer;
+            font-weight: bold; /* Bold text for emphasis */
+        }
+        button:hover {
+            background-color: #444; /* Darker shade on hover */
+        }
+        #successPopup {
+            display: none;
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #fff; /* White background for popup */
+            color: #000; /* Black text in popup */
+            padding: 20px;
+            border: 2px solid #4CAF50; /* Green border */
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            border-radius: 4px; /* Rounded corners */
+        }
+        .popup-button {
+            background-color: #4CAF50; /* Green button for acknowledgment */
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px; /* Rounded corners */
+        }
+        .popup-button:hover {
+            background-color: #45a049; /* Darker green on hover */
+        }
+        @media (max-width: 600px) {
+            body {
+                margin: 10px; /* Less margin on smaller screens */
+            }
+            select, input, button {
+                padding: 8px; /* Smaller padding */
+            }
         }
     </style>
 </head>
@@ -29,13 +95,19 @@
     </select>
 
     <h3>Arrival Times</h3>
-    <input type="datetime-local" id="arrivalInInput" placeholder="Arrival In">
-    <input type="datetime-local" id="arrivalOutInput" placeholder="Arrival Out">
+    <input type="datetime-local" id="gate-in" placeholder="Arrival In">
+    <input type="datetime-local" id="gate-out" placeholder="Arrival Out">
 
     <h3>Enter OTP</h3>
-    <input type="text" id="otpInput" placeholder="Enter OTP">
+    <input type="text" id="dcn_no" placeholder="Enter OTP">
 
-    <button id="submitBtn">Submit</button>
+    <button id="submit-save">Submit</button>
+
+    <!-- Success Popup for Acknowledgment -->
+    <div id="successPopup">
+        <p>Data submitted successfully!</p>
+        <button id="closePopup" class="popup-button">Close</button>
+    </div>
 
     <script>
         // Initialize Telegram Web App
@@ -63,32 +135,83 @@
             customerSelect.innerHTML = ''; // Clear previous customers
             selectedTrip.customers.forEach(customer => {
                 const option = document.createElement('option');
-                option.value = customer;
-                option.text = customer;
+                option.value = customer.cus_code;
+                option.text = customer.name;
                 customerSelect.appendChild(option);
             });
+        });
+
+        // Update input fields based on selected customer
+        customerSelect.addEventListener('change', function() {
+            const selectedTrip = formdata.find(trip => trip.trip_id === tripSelect.value);
+            const selectedCustomer = selectedTrip.customers.find(customer => customer.cus_code === this.value);
+            updateFields(selectedCustomer);
         });
 
         // Prepopulate the customer list for the first trip
         tripSelect.dispatchEvent(new Event('change'));
 
-        document.getElementById('submitBtn').addEventListener('click', function() {
-            const trip = document.getElementById('tripSelect').value;
-            const customer = document.getElementById('customerSelect').value;
-            const arrivalIn = document.getElementById('arrivalInInput').value;
-            const arrivalOut = document.getElementById('arrivalOutInput').value;
-            const otp = document.getElementById('otpInput').value;
+        document.getElementById('submit-save').addEventListener('click', function() {
+            const trip_id = document.getElementById('tripSelect').value;
+            const cid = document.getElementById('customerSelect').value;
+            const gate_in = document.getElementById('gate-in').value;
+            const gate_out = document.getElementById('gate-out').value;
+            const dcn_no = document.getElementById('dcn_no').value;
+
+            console.log(trip);
+            console.log(customer);
+            console.log(gate_in);
+            console.log(gate_out);
+            console.log(dcn_no);
+
+            if (!trip || !customer || !gate_in || !gate_out || !dcn_no) {
+                alert("All fields must be filled out.");
+                return;
+            }
 
             const result = {
-                trip: trip,
-                customer: customer,
-                arrivalIn: arrivalIn,
-                arrivalOut: arrivalOut,
-                otp: otp
+                trip_id: trip_id,
+                cid: cid,
+                gate_in: gate_in,
+                gate_out: gate_out,
+                dcn_no: dcn_no
             };
+
+            // Confirmation dialog
+            const confirmSubmission = confirm(`Do you want to save, Confirm?`);
+            if (!confirmSubmission) {
+                return;
+            }
 
             // Send data back to the bot
             tg.sendData(JSON.stringify(result)); // Sends data back to the bot
+
+            // Simulate success response from bot
+            showSuccessPopup();
+        });
+
+        // Function to show the success acknowledgment popup
+        function showSuccessPopup() {
+            const popup = document.getElementById('successPopup');
+            popup.style.display = 'block';
+        }
+
+        // Populate input fields with customer data and disable fields based on edit flags
+        function updateFields(customer) {
+            document.getElementById('gate-in').value = customer.edit_gatein ? customer.gatein_time : '';
+            document.getElementById('gate-out').value = customer.edit_gateout ? customer.gateout_time : '';
+            document.getElementById('dcn_no').value = customer.dcn_no;
+
+            // Enable or disable fields based on edit flags
+            document.getElementById('gate-in').disabled = !customer.edit_gatein;
+            document.getElementById('gate-out').disabled = !customer.edit_gateout;
+            document.getElementById('dcn_no').disabled = !customer.edit_dcn;
+        }
+
+        // Close the success popup
+        document.getElementById('closePopup').addEventListener('click', function() {
+            const popup = document.getElementById('successPopup');
+            popup.style.display = 'none';
         });
     </script>
 </body>
