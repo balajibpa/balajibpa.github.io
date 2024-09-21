@@ -117,7 +117,9 @@
         // Parse URL parameters to get dynamic trip data
         const urlParams = new URLSearchParams(window.location.search);
         const storedParams = sessionStorage.getItem('__telegram__initParams');
-        const inputData = JSON.parse(storedParams);
+        const SessionData = JSON.parse(storedParams);
+        const inputData = JSON.parse(SessionData.tripData)
+        console.log(inputData,"init_data");
 
 
         let shouldContinue = true;
