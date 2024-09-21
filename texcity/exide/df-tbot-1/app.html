@@ -118,9 +118,11 @@
         const urlParams = new URLSearchParams(window.location.search);
         const inputData = JSON.parse(urlParams.get('tripData'));
 
+        let shouldContinue = true;
         // Ensure formDataString is not null and parse it
         if (!inputData) {
             console.error('tripData parameter is missing or invalid');
+            shouldContinue = false;
         } else {
             try {
                 const tripData = JSON.parse(inputData).formdata;
@@ -128,12 +130,13 @@
                 // Check if tripData is an array
                 if (!Array.isArray(tripData)) {
                     console.error('tripData is not an array');
-                    return;
+                    shouldContinue = false;
                 }
 
                 // Proceed with the rest of your logic here, e.g., populating dropdowns
             } catch (error) {
                 console.error('Error parsing tripData:', error);
+                shouldContinue = false;
             }
         }
 
