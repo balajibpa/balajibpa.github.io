@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini Web App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        select, input, button {
+            display: block;
+            margin: 10px 0;
+            padding: 10px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <h2>Select Trip and Customer</h2>
+    <select id="tripSelect">
+        <!-- Dynamic trip options will be inserted here -->
+    </select>
+
+    <select id="customerSelect">
+        <!-- Dynamic customer options will be inserted here -->
+    </select>
+
+    <h3>Arrival Times</h3>
+    <input type="datetime-local" id="arrivalInInput" placeholder="Arrival In">
+    <input type="datetime-local" id="arrivalOutInput" placeholder="Arrival Out">
+
+    <h3>Enter OTP</h3>
+    <input type="text" id="otpInput" placeholder="Enter OTP">
+
+    <button id="submitBtn">Submit</button>
+
+    <script>
+        // Initialize Telegram Web App
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        // Parse URL parameters to get dynamic trip data
+        const urlParams = new URLSearchParams(window.location.search);
+        const tripData = JSON.parse(urlParams.get('tripData'));
+
+        // Populate the trip dropdown with dynamic data
+        const tripSelect = document.getElementById('tripSelect');
+        const customerSelect = document.getElementById('customerSelect');
+
+        tripData.forEach(trip => {
+            const option = document.createElement('option');
+            option.value = trip.id;
+            option.text = `${trip.id} - ${trip.date}`;
+            tripSelect.appendChild(option);
+        });
+
+        // Update customer list based on selected trip
+        tripSelect.addEventListener('change', function() {
+            const selectedTrip = tripData.find(trip => trip.id === this.value);
+            customerSelect.innerHTML = ''; // Clear previous customers
+            selectedTrip.customers.forEach(customer => {
+                const option = document.createElement('option');
+                option.value = customer;
+                option.text = customer;
+                customerSelect.appendChild(option);
+            });
+        });
+
+        // Prepopulate the customer list for the first trip
+        tripSelect.dispatchEvent(new Event('change'));
+
+        document.getElementById('submitBtn').addEventListener('click', function() {
+            const trip = document.getElementById('tripSelect').value;
+            const customer = document.getElementById('customerSelect').value;
+            const arrivalIn = document.getElementById('arrivalInInput').value;
+            const arrivalOut = document.getElementById('arrivalOutInput').value;
+            const otp = document.getElementById('otpInput').value;
+
+            const result = {
+                trip: trip,
+                customer: customer,
+                arrivalIn: arrivalIn,
+                arrivalOut: arrivalOut,
+                otp: otp
+            };
+
+            // Send data back to the bot
+            tg.sendData(JSON.stringify(result)); // Sends data back to the bot
+        });
+    </script>
+</body>
+</html>
