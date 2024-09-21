@@ -125,7 +125,7 @@
             shouldContinue = false;
         } else {
             try {
-                const tripData = JSON.parse(inputData).formdata;
+                let tripData = inputData.formdata;
                 
                 // Check if tripData is an array
                 if (!Array.isArray(tripData)) {
@@ -144,17 +144,20 @@
         const tripSelect = document.getElementById('tripSelect');
         const customerSelect = document.getElementById('customerSelect');
 
+        let tripData = inputData.formdata;
+
         tripData.forEach(trip => {
             const option = document.createElement('option');
-            option.value = trip.id;
-            option.text = `${trip.id} - ${trip.date}`;
+            option.value = trip.trip_id;
+            option.text = `${trip.trip_id} - ${trip.date}`;
             tripSelect.appendChild(option);
         });
 
         // Update customer list based on selected trip
         tripSelect.addEventListener('change', function() {
-            const selectedTrip = tripData.find(trip => trip.id === this.value);
+            const selectedTrip = tripData.find(trip => trip.trip_id === this.value);
             customerSelect.innerHTML = ''; // Clear previous customers
+            console.log(selectedTrip);
             selectedTrip.customers.forEach(customer => {
                 const option = document.createElement('option');
                 option.value = customer.cus_code;
@@ -180,13 +183,13 @@
             const gate_out = document.getElementById('gate-out').value;
             const dcn_no = document.getElementById('dcn_no').value;
 
-            console.log(trip);
-            console.log(customer);
+            console.log(trip_id);
+            console.log(cid);
             console.log(gate_in);
             console.log(gate_out);
             console.log(dcn_no);
 
-            if (!trip || !customer || !gate_in || !gate_out || !dcn_no) {
+            if (!trip_id || !cid || !gate_in || !gate_out || !dcn_no) {
                 alert("All fields must be filled out.");
                 return;
             }
