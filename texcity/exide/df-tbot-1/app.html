@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- 20240921164400 by Balajibpa laptop-->
+    <!-- 20240921165500 by Balajibpa laptop-->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
@@ -179,7 +179,7 @@
 
         // Update input fields based on selected customer
         customerSelect.addEventListener('change', function() {
-            const selectedTrip = tripData.formdata.find(trip => trip.trip_id === tripSelect.value);
+            const selectedTrip = inputData.formdata.find(trip => trip.trip_id === tripSelect.value);
             const selectedCustomer = selectedTrip.customers.find(customer => customer.cus_code === this.value);
             updateFields(selectedCustomer);
         });
