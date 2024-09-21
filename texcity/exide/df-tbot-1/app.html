@@ -179,7 +179,7 @@
 
         // Update input fields based on selected customer
         customerSelect.addEventListener('change', function() {
-            const selectedTrip = formdata.find(trip => trip.trip_id === tripSelect.value);
+            const selectedTrip = tripData.formdata.find(trip => trip.trip_id === tripSelect.value);
             const selectedCustomer = selectedTrip.customers.find(customer => customer.cus_code === this.value);
             updateFields(selectedCustomer);
         });
