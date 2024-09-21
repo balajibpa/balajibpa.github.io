@@ -116,7 +116,26 @@
 
         // Parse URL parameters to get dynamic trip data
         const urlParams = new URLSearchParams(window.location.search);
-        const tripData = JSON.parse(urlParams.get('tripData'));
+        const inputData = JSON.parse(urlParams.get('tripData'));
+
+        // Ensure formDataString is not null and parse it
+        if (!inputData) {
+            console.error('tripData parameter is missing or invalid');
+        } else {
+            try {
+                const tripData = JSON.parse(inputData).formdata;
+                
+                // Check if tripData is an array
+                if (!Array.isArray(tripData)) {
+                    console.error('tripData is not an array');
+                    return;
+                }
+
+                // Proceed with the rest of your logic here, e.g., populating dropdowns
+            } catch (error) {
+                console.error('Error parsing tripData:', error);
+            }
+        }
 
         // Populate the trip dropdown with dynamic data
         const tripSelect = document.getElementById('tripSelect');
