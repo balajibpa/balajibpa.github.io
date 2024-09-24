@@ -171,13 +171,11 @@
 
                     updateCustomerList(tripData);
 
-                    // Update customer list based on selected trip
-                    tripSelect.addEventListener('change', updateCustomerList(tripData));
-
                     updateFields(tripData);
-    
-                    // Update input fields based on selected customer
-                    customerSelect.addEventListener('change', updateFields(tripData));
+
+                    // Register event listeners after tripData is defined
+                    tripSelect.addEventListener('change', () => updateCustomerList(tripData));
+                    customerSelect.addEventListener('change', () => updateFields(tripData));
     
                     // Prepopulate the customer list for the first trip
                     tripSelect.dispatchEvent(new Event('change'));
@@ -188,7 +186,7 @@
                 }
             }
         }
-    
+
         // Function to handle the submission and sending data to the bot
         document.getElementById('submit-save').addEventListener('click', function() {
             const trip_id = document.getElementById('tripSelect').value;
@@ -229,6 +227,11 @@
             .then(data => {
                 if (data.status === 'success') {
                     showSuccessPopup(data.message); // Show success popup on success
+
+                    // Reload the page after a short delay (to show the success popup first)
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2500); // Reloads after 1.5 seconds
                 } else {
                     alert(`Error: ${data.message}`);
                 }
