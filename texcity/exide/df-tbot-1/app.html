@@ -11,6 +11,24 @@
     <title>Exide Gate In & Out Form</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
+        @media (max-width: 600px) {
+            body {
+                margin: 10px; /* Less margin on smaller screens */
+                max-width: 600px;
+            }
+            select, input, button {
+                padding: 8px; /* Smaller padding */
+            }
+        }
+        @media (min-width: 600px) {
+            body {
+                margin: 10px; /* Less margin on smaller screens */
+                max-width: 480px;
+            }
+            select, input, button {
+                padding: 8px; /* Smaller padding */
+            }
+        }
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
@@ -79,14 +97,7 @@
         .popup-button:hover {
             background-color: #45a049; /* Darker green on hover */
         }
-        @media (max-width: 600px) {
-            body {
-                margin: 10px; /* Less margin on smaller screens */
-            }
-            select, input, button {
-                padding: 8px; /* Smaller padding */
-            }
-        }
+        
     </style>
 </head>
 <body>
@@ -103,108 +114,89 @@
     <input type="datetime-local" id="gate-in" placeholder="Arrival In">
     <input type="datetime-local" id="gate-out" placeholder="Arrival Out">
 
-    <h3>Enter OTP</h3>
-    <input type="text" id="dcn_no" placeholder="Enter OTP">
+    <h3>Enter DCN</h3>
+    <input type="text" id="dcn_no" placeholder="Enter DCN">
 
     <button id="submit-save">Submit</button>
 
     <!-- Success Popup for Acknowledgment -->
     <div id="successPopup">
-        <p>Data submitted successfully!</p>
+        <p id="successMessage">Data submitted successfully!</p>
         <button id="closePopup" class="popup-button">Close</button>
     </div>
 
     <script>
         // Initialize Telegram Web App
+        //const hostname = "http://localhost:12100";
+        const hostname = "http://te-tbot-form1.tclglobal.in:12100";
+    
+        document.addEventListener('DOMContentLoaded', init_data);
+    
         const tg = window.Telegram.WebApp;
         tg.expand();
+    
+        async function init_data() {
+            // Fetch and populate trip data
+            const inputData = await fetchTripData();
+            console.log(inputData, "init_data");
+    
+            let shouldContinue = true;
+    
+            // Ensure inputData is valid
+            if (!inputData) {
+                console.error('tripData parameter is missing or invalid');
+                shouldContinue = false;
+            } else {
+                try {
+                    let tripData = inputData.formdata;
+    
+                    // Check if tripData is an array
+                    if (!Array.isArray(tripData)) {
+                        console.error('tripData is not an array');
+                        shouldContinue = false;
+                    }
+    
+                    if (!shouldContinue) return;
+    
+                    // Populate the trip dropdown
+                    const tripSelect = document.getElementById('tripSelect');
+                    const customerSelect = document.getElementById('customerSelect');
+    
+                    tripData.forEach(trip => {
+                        const option = document.createElement('option');
+                        option.value = trip.trip_id;
+                        option.text = `${trip.trip_id} - ${trip.date}`;
+                        tripSelect.appendChild(option);
+                    });
 
-        // Parse URL parameters to get dynamic trip data
-        const urlParams = new URLSearchParams(window.location.search);
-        const storedParams = sessionStorage.getItem('__telegram__initParams');
-        const SessionData = JSON.parse(storedParams);
-        const inputData = JSON.parse(SessionData.tripData)
-        console.log(inputData,"init_data");
+                    updateCustomerList(tripData);
 
+                    // Update customer list based on selected trip
+                    tripSelect.addEventListener('change', updateCustomerList(tripData));
 
-        let shouldContinue = true;
-        // Ensure formDataString is not null and parse it
-        if (!inputData) {
-            console.error('tripData parameter is missing or invalid');
-            shouldContinue = false;
-        } else {
-            try {
-                let tripData = inputData.formdata;
-                
-                // Check if tripData is an array
-                if (!Array.isArray(tripData)) {
-                    console.error('tripData is not an array');
+                    updateFields(tripData);
+    
+                    // Update input fields based on selected customer
+                    customerSelect.addEventListener('change', updateFields(tripData));
+    
+                    // Prepopulate the customer list for the first trip
+                    tripSelect.dispatchEvent(new Event('change'));
+    
+                } catch (error) {
+                    console.error('Error parsing tripData:', error);
                     shouldContinue = false;
                 }
-
-                // Proceed with the rest of your logic here, e.g., populating dropdowns
-            } catch (error) {
-                console.error('Error parsing tripData:', error);
-                shouldContinue = false;
             }
         }
-
-        
-
-        // Populate the trip dropdown with dynamic data
-        const tripSelect = document.getElementById('tripSelect');
-        const customerSelect = document.getElementById('customerSelect');
-
-        let tripData = inputData.formdata;
-
-        tripData.forEach(trip => {
-            const option = document.createElement('option');
-            option.value = trip.trip_id;
-            option.text = `${trip.trip_id} - ${trip.date}`;
-            tripSelect.appendChild(option);
-        });
-
-        // Update customer list based on selected trip
-        tripSelect.addEventListener('change', function() {
-            const selectedTrip = tripData.find(trip => trip.trip_id === this.value);
-            customerSelect.innerHTML = ''; // Clear previous customers
-            console.log(selectedTrip);
-            selectedTrip.customers.forEach(customer => {
-                const option = document.createElement('option');
-                option.value = customer.cus_code;
-                option.text = customer.name;
-                customerSelect.appendChild(option);
-            });
-        });
-
-        // Update input fields based on selected customer
-        customerSelect.addEventListener('change', function() {
-            const selectedTrip = inputData.formdata.find(trip => trip.trip_id === tripSelect.value);
-            const selectedCustomer = selectedTrip.customers.find(customer => customer.cus_code === this.value);
-            updateFields(selectedCustomer);
-        });
-
-        // Prepopulate the customer list for the first trip
-        tripSelect.dispatchEvent(new Event('change'));
-
+    
+        // Function to handle the submission and sending data to the bot
         document.getElementById('submit-save').addEventListener('click', function() {
             const trip_id = document.getElementById('tripSelect').value;
             const cid = document.getElementById('customerSelect').value;
             const gate_in = document.getElementById('gate-in').value;
             const gate_out = document.getElementById('gate-out').value;
             const dcn_no = document.getElementById('dcn_no').value;
-
-            console.log(trip_id);
-            console.log(cid);
-            console.log(gate_in);
-            console.log(gate_out);
-            console.log(dcn_no);
-
-            if (!trip_id || !cid || !gate_in || !gate_out || !dcn_no) {
-                alert("All fields must be filled out.");
-                return;
-            }
-
+    
             const result = {
                 trip_id: trip_id,
                 cid: cid,
@@ -212,43 +204,129 @@
                 gate_out: gate_out,
                 dcn_no: dcn_no
             };
-
-            // Confirmation dialog
+    
             const confirmSubmission = confirm(`Do you want to save, Confirm?`);
             if (!confirmSubmission) {
                 return;
             }
 
-            // Send data back to the bot
-            tg.sendData(JSON.stringify(result)); // Sends data back to the bot
+            console.log(result);
+    
+            // Send data via POST request
+            fetch(`${hostname}/spform1/submit.json`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(result),
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    showSuccessPopup(data.message); // Show success popup on success
+                } else {
+                    alert(`Error: ${data.message}`);
+                }
+            })
+            .catch(error => {
+                console.error('There was a problem with the fetch operation:', error);
+                alert('An error occurred while submitting the form.');
+            });
 
-            // Simulate success response from bot
-            showSuccessPopup();
         });
-
+    
         // Function to show the success acknowledgment popup
-        function showSuccessPopup() {
+        function showSuccessPopup(message) {
             const popup = document.getElementById('successPopup');
+            const popupMessage = document.getElementById('successMessage');
+            // Set the message in the popup
+            popupMessage.textContent = message;
             popup.style.display = 'block';
+            
         }
-
-        // Populate input fields with customer data and disable fields based on edit flags
-        function updateFields(customer) {
-            document.getElementById('gate-in').value = customer.edit_gatein ? customer.gatein_time : '';
-            document.getElementById('gate-out').value = customer.edit_gateout ? customer.gateout_time : '';
-            document.getElementById('dcn_no').value = customer.dcn_no;
-
-            // Enable or disable fields based on edit flags
-            document.getElementById('gate-in').disabled = !customer.edit_gatein;
-            document.getElementById('gate-out').disabled = !customer.edit_gateout;
-            document.getElementById('dcn_no').disabled = !customer.edit_dcn;
-        }
-
+    
         // Close the success popup
         document.getElementById('closePopup').addEventListener('click', function() {
             const popup = document.getElementById('successPopup');
             popup.style.display = 'none';
         });
+
+        // Function to update the customer list based on selected trip
+        function updateCustomerList(tripData) {
+            const tripSelect = document.getElementById('tripSelect');
+            const customerSelect = document.getElementById('customerSelect');
+
+            // Find the selected trip from tripData
+            const selectedTrip = tripData.find(trip => trip.trip_id === tripSelect.value);
+
+            // Clear the previous customer options
+            customerSelect.innerHTML = ''; 
+
+            if (selectedTrip) {
+                // Loop through customers and create new options
+                selectedTrip.customers.forEach(customer => {
+                    const option = document.createElement('option');
+                    option.value = customer.cus_code;
+                    option.text = customer.name;
+                    customerSelect.appendChild(option);
+                });
+            } else {
+                console.error('Selected trip not found.');
+            }
+            updateFields(tripData);
+        }
+    
+        // Populate input fields with customer data and disable fields based on edit flags
+        function updateFields(tripData) {
+            const tripSelect = document.getElementById('tripSelect');
+            const customerSelect = document.getElementById('customerSelect');
+
+            const selectedTrip = tripData.find(trip => trip.trip_id === tripSelect.value);
+            const customer = selectedTrip.customers.find(customer => customer.cus_code === customerSelect.value);
+
+            console.log("Customer selection :",customer);
+
+            document.getElementById('gate-in').value = customer.gatein_time || '';
+            document.getElementById('gate-out').value = customer.gateout_time || '';
+            document.getElementById('dcn_no').value = customer.dcn_no || '';
+    
+            // Enable or disable fields based on edit flags
+            document.getElementById('gate-in').disabled = !customer.edit_gatein;
+            document.getElementById('gate-out').disabled = !customer.edit_gateout;
+            document.getElementById('dcn_no').disabled = !customer.edit_dcn_no;
+        }
+    
+        // Async function to fetch trip data
+        async function fetchTripData() {
+            try {
+                const response = await fetch(`${hostname}/spform1/tripsdata.json`);
+    
+                // Check if the response is OK (status code 200)
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+    
+                const responseData = await response.json();
+    
+                // Check if the data returned is successful
+                if (responseData.status === "success") {
+                    // Parse the "formdata" key from the data
+                    const tripsData = JSON.parse(responseData.data);
+                    console.log(tripsData);
+                    return tripsData;
+                } else {
+                    console.error("Failed to fetch trips data");
+                }
+            } catch (error) {
+                console.error('There was a problem with the fetch operation:', error);
+            }
+        }
     </script>
+    
 </body>
 </html>
